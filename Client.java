@@ -4,11 +4,15 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.lang.String; 
+import java.nio.*;
+import java.nio.file.*;
+
 
 
 public class Client {
 	static {
     	System.loadLibrary("encrypt");
+    	System.loadLibrary("decrypt");
     }
 
 	private static BufferedReader input;
@@ -32,10 +36,15 @@ public class Client {
 				new InputStreamReader(socket.getInputStream()));
 			output = new PrintWriter(socket.getOutputStream(), true);
 
-			for(int i = 0; i < 3; i++) {
+			for(int i = 0; i < 2; i++) {
 				System.out.println(input.readLine());
 			}
-			
+
+			String fileString = input.readLine();
+			byte[] fileBytes = fileString.getBytes();
+			TinyEncrypt tinyEncrypt = new TinyEncrypt();
+			fileBytes = tinyEncrypt.decryptBytes(fileBytes);
+			Files.write(Paths.get("output.txt"), fileBytes);
 			// byte[] outBytes;
 			// Encryption encrypt = new Encryption();
 			// outBytes = encrypt.encrypt(value, key);
