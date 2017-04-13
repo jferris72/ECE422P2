@@ -12,6 +12,8 @@ import java.io.DataOutputStream;
 import java.util.Arrays;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.*;
+
 
 
 
@@ -49,53 +51,44 @@ public class Client {
 
 			input = new DataInputStream(socket.getInputStream());
 			output = new DataOutputStream(socket.getOutputStream());
-
+			//SEND CREDENTIALS
 			output.writeInt(credentialsEncrypt.length);
 			output.write(credentialsEncrypt);
 
-			int len = input.readInt();
-			byte[] encryptedBytes = new byte[len];
-
-			if (len > 0) {
-				input.readFully(encryptedBytes);
+			int response = input.readInt();
+			if(response == 1) {
+				System.exit(0);
 			}
-
-			System.out.println(Arrays.toString(encryptedBytes));
-
-
-
-			// for(int i = 0; i < 2; i++) {
-			// 	System.out.println(input.readLine());
-			// }
-
-			// String fileString = input.readLine();
-			// byte[] fileBytes = fileString.getBytes();
-			// TinyEncrypt tinyEncrypt = new TinyEncrypt();
-			// byte[] fileBytes = tinyEncrypt.decryptBytes(fileBytes);
-			// Files.write(Paths.get("output.txt"), fileBytes);
-
-			// BufferedInputStream bis = new BufferedInputStream(socket.getInputStream());
-			// byte[] encryptedBytes;
-			// bis.read(encryptedBytes, 0, 999999);
-			
-			byte[] fileBytes = tinyEncrypt.decryptBytes(encryptedBytes);
-			Files.write(Paths.get("output.txt"), fileBytes);
-			System.out.println(Arrays.toString(fileBytes));
-
-			File file = new File("./", "fuck.txt");
-			FileOutputStream fos = new FileOutputStream(file);
-			fos.write(fileBytes);
-			String mystring = new String(fileBytes).trim();
-			System.out.println(mystring);
-			
 
 			BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
 
 			while(true) {
-				// System.out.println("Enter filename: ");
-				// fileName = consoleReader.readLine();
-				// output.println(fileName);
-				// System.out.println(input.readLine());
+				//SEND FILE NAMES
+				System.out.println("Enter filename: ");
+				fileName = consoleReader.readLine();
+				byte[] fileBytes = fileName.getBytes();
+				byte[] encryptedFile = tinyEncrypt.encryptBytes(fileBytes);
+				output.writeInt(encryptedFile.length);
+				output.write(encryptedFile);
+				//RECEIVE FILE
+				int exists = input.readInt();
+				if (exists == 1) {
+					int actualLen = input.readInt();
+					int len = input.readInt();
+					byte[] newFile = new byte[len];
+					if (len > 0) {
+						input.readFully(newFile);
+					}
+					//WRITE FILE
+					byte[] decryptedFile = tinyEncrypt.decryptBytes(newFile);
+					byte[] finalBytes = new byte[actualLen];
+					for(int i = 0; i < actualLen; i++) {
+						finalBytes[i] = decryptedFile[i];
+					}
+					Files.write(Paths.get(fileName), finalBytes);
+				} else {
+					System.out.println("file does not exist");
+				}
 			}
 		} catch(IOException e) {
 			System.out.println("failed to connect to server");

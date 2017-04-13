@@ -13,6 +13,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.*;
+
 
 /*
  * Password salting taken from http://stackoverflow.com/questions/33085493/hash-a-password-with-sha-512-in-java
@@ -80,36 +84,46 @@ public class Server {
 				if (len > 0) {
 					input.readFully(clientCredentials);
 				}
+				//CHECK CREDENTIALS
+				if(checkCredentials(tinyEncrypt.decryptBytes(clientCredentials))) {
+					System.out.println("good login");
+					int resp = 0;
+					output.writeInt(resp);
+				} else {
+					System.out.println("failed login");
+					int resp = 1;
+					output.writeInt(resp);
+					return;
+				}
 
-				// System.out.println(Arrays.toString(clientCredentials));
-				checkCredentials(tinyEncrypt.decryptBytes(clientCredentials));
-
-				// output.println("Connected with server");
-				// output.println("to quit type 'quit'");
-				String fileName = "test.txt";
-				byte[] fileRead = Files.readAllBytes(Paths.get(fileName));
-				byte[] encrypted = tinyEncrypt.encryptBytes(fileRead);
-				// System.out.println(Arrays.toString(encrypted));
-
-				output.writeInt(encrypted.length);
-				output.write(encrypted);
-
-				byte[] decrypted = tinyEncrypt.decryptBytes(encrypted);
-				Files.write(Paths.get("decrypted.txt"), decrypted);
-				System.out.println(Arrays.toString(decrypted));
-				String mystring = new String(decrypted).trim();
-				System.out.println(mystring);
-
-
-				// output.println(encrypted);
-
+				//RETURN FILES
 				while(true) {
-					// String inputString = input.readLine();
-					// if(inputString == null || inputString.equals("quit")) {
-					// 	System.out.println("client quit");
-					// 	break;
-					// }
-					// output.println(inputString.toUpperCase());
+					len = input.readInt();
+					byte[] fileName = new byte[len];
+					if (len > 0) {
+						input.readFully(fileName);
+					}
+
+					byte[] decrFileName = tinyEncrypt.decryptBytes(fileName);
+					String file = new String(decrFileName).trim();
+					Boolean exists = new File(file).exists();
+					if (exists == false) {
+						output.writeInt(0);
+					} else {
+						output.writeInt(1);
+						try {
+							byte[] fileRead = Files.readAllBytes(Paths.get(file));
+							byte[] encrypted = tinyEncrypt.encryptBytes(fileRead);
+							output.writeInt(fileRead.length);
+							output.writeInt(encrypted.length);
+							output.write(encrypted);
+						} catch (Exception e) {
+							output.writeInt(0);
+							output.writeInt(0);
+							byte[] error = {0};
+							output.write(error);
+						}
+					}
 				}
 			} catch (Exception e) {
 				System.out.println("error handling client");
@@ -122,6 +136,7 @@ public class Server {
 			}
 		}
 
+		//RETURN CREDENTIALS SALTED
 		public String get_SHA_512_SecurePassword(String passwordToHash, String salt) {
 			String generatedPassword = null;
 			try {
@@ -138,19 +153,34 @@ public class Server {
 				e.printStackTrace();
 		    }
 		    catch(Exception e) {
-		    	System.out.println("failed to secure pasdword");
+		    	System.out.println("failed to secure password");
 		    }
 		    return generatedPassword;
 		}
 
+		//CHECK CREDENTIALS
 		public Boolean checkCredentials(byte[] credentials) {
-			String str = new String(credentials);
-			String[] split = str.split("\\s+");
-			String username = split[0];
-			String password = split[1];
-			System.out.println(username);
-			System.out.println(password);
-			return true;
+			try {
+				String str = new String(credentials).trim();
+				String salt = "asdkfjhsleirtvolm";
+				String hash = get_SHA_512_SecurePassword(str, salt);
+				Boolean found = false;
+
+				try (BufferedReader br = new BufferedReader(new FileReader("credentials.txt"))) {
+					// System.out.println(hash);
+					String line;
+					while ((line = br.readLine()) != null) {
+						if(line.equals(hash)) {
+							found = true;
+							break;
+						}
+					}
+				}
+
+				return found;
+			} catch(Exception e) {
+				return false;
+			}
 		}
 	}
 }

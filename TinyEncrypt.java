@@ -20,35 +20,22 @@ public class TinyEncrypt {
 		Encryption encryption = new Encryption();
 		Decryption decryption = new Decryption();
 		int[] key = {10, 20, 30, 40};
-		// System.out.println("before for loop" +  length);
 		for(int i = 0; i < index; i+= 8) {
 			for(int j = 0; j < 4; j++) {
 				firstBytes[j] = data[i + j];
 				secondBytes[j] = data[i + j + 4];
 			}
-			// System.out.println(Arrays.toString(firstBytes));
-			// System.out.println(Arrays.toString(secondBytes));
+
 			values[0] = toInt(firstBytes);
 			values[1] = toInt(secondBytes);
-			// System.out.println(values[0]);
-			// System.out.println(values[1]);
 			int[] temp = encryption.encrypt(values, key);
-			// System.out.println("encrypt:");
-			// System.out.println(temp[0]);
-			// System.out.println(temp[1]);
-			// temp = decryption.decrypt(temp, key);
 			firstBytes = toBytes(temp[0]);
 			secondBytes = toBytes(temp[1]);
 
-			// System.out.println(Arrays.toString(firstBytes));
-			// System.out.println(Arrays.toString(secondBytes));
 			for(int j = 0; j < 4; j++) {
 				encryptedData[j + i] = firstBytes[j];
 				encryptedData[j + i + 4] = secondBytes[j];
 			}
-			// System.out.println("encrypted Values: %d", temp[0]);
-			// temp = decryption.decrypt(values, key);
-			// System.out.println("decr values: %d", values[0]);
 
 		}
 		if (remainder < 4) {
@@ -81,8 +68,7 @@ public class TinyEncrypt {
 			encryptedData[index+i] = firstBytes[i];
 			encryptedData[index+i+4] = secondBytes[i];
 		}
-		// System.out.println(Arrays.toString(firstBytes));
-		// System.out.println(Arrays.toString(encryptedData));
+
 		return encryptedData;
 	}
 
@@ -90,7 +76,6 @@ public class TinyEncrypt {
 		int length = data.length;
 		length = length / 8;
 		length = length * 8;
-		// System.out.println(Arrays.toString(data));
 
 		byte[] decryptedData = new byte[length];
 		byte[] firstBytes = new byte[4];
